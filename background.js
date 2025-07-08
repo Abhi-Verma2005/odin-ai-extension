@@ -43,7 +43,7 @@ class BackgroundService {
       problemsSynced: 0,
       lastSync: null,
       settings: {
-        backendUrl: 'https://algo-chat-gamma.vercel.app//api/solution',
+        backendUrl: 'https://algo-chat-gamma.vercel.app/api/solution',
         authCookieName: 'token',
         autoSync: true,
         retryAttempts: 3
@@ -108,7 +108,7 @@ class BackgroundService {
 
     
     const { data, authToken } = request;
-    const backendUrl = 'http://127.0.0.1:3000/api/submit';
+    const backendUrl = 'https://algo-chat-gamma.vercel.app/api/submit';
     const maxRetries = 3;
     const retryDelay = 1000; // 1 second
     

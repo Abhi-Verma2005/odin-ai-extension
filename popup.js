@@ -1,6 +1,6 @@
 class PopupManager {
   constructor() {
-    this.backendUrl = 'http://127.0.0.1:3000/api'; // Update with your actual backend URL
+    this.backendUrl = 'https://algo-chat-gamma.vercel.app/api'; // Update with your actual backend URL
     this.isAuthenticated = false;
     
     // DOM elements
