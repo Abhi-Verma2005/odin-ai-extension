@@ -10,6 +10,7 @@
   ],
   "host_permissions": [
     "https://leetcode.com/*",
+    "https://algo-chat-gamma.vercel.app//*",
     "http://localhost:3000/*",
     "http://127.0.0.1:3000/*"
   ],

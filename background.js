@@ -43,7 +43,7 @@ class BackgroundService {
       problemsSynced: 0,
       lastSync: null,
       settings: {
-        backendUrl: 'http://localhost:3000/api/solution',
+        backendUrl: 'https://algo-chat-gamma.vercel.app//api/solution',
         authCookieName: 'token',
         autoSync: true,
         retryAttempts: 3

@@ -1,6 +1,6 @@
 class LeetCodeSyncExtension {
   constructor() {
-    this.backendUrl = 'http://127.0.0.1:3000/api/submit';
+    this.backendUrl = 'https://algo-chat-gamma.vercel.app/api/submit';
     this.isMonitoring = false;
     this.lastSubmittedCode = null;
     this.isProcessingSubmission = false; // Prevent multiple simultaneous submissions
