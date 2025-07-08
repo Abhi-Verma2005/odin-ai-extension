@@ -3,6 +3,7 @@ class LeetCodeSyncExtension {
     this.backendUrl = 'http://127.0.0.1:3000/api/submit';
     this.isMonitoring = false;
     this.lastSubmittedCode = null;
+    this.isProcessingSubmission = false; // Prevent multiple simultaneous submissions
     this.retryAttempts = 3;
     this.retryDelay = 1000;
     
@@ -35,15 +36,12 @@ class LeetCodeSyncExtension {
       'button[type="submit"]'
     ];
     
-    console.log('🚀 [CONTENT] LeetCodeSyncExtension initialized');
-    console.log('🌐 [CONTENT] Backend URL:', this.backendUrl);
-    console.log('🎯 [CONTENT] Success selectors:', this.successSelectors.length);
-    
+  
     this.init();
   }
   
   async init() {
-    console.log('⚡ [CONTENT] Initializing...');
+
     
     // Check if we're on the right page
     if (!this.isLeetCodeProblemPage()) {
@@ -53,7 +51,7 @@ class LeetCodeSyncExtension {
     
     // Wait for page to load completely
     if (document.readyState === 'loading') {
-      console.log('⏳ [CONTENT] Waiting for page to load...');
+
       document.addEventListener('DOMContentLoaded', () => {
         this.startExtension();
       });
@@ -63,7 +61,7 @@ class LeetCodeSyncExtension {
   }
   
   startExtension() {
-    console.log('🚀 [CONTENT] Starting extension...');
+
     
     // Add debugging panel
     this.addDebugPanel();
@@ -73,7 +71,6 @@ class LeetCodeSyncExtension {
       this.startMonitoring();
       this.setupSubmissionListener();
       this.updateStatus('Connected');
-      console.log('✅ [CONTENT] Extension fully initialized');
     }, 1000);
   }
   
@@ -108,7 +105,7 @@ class LeetCodeSyncExtension {
     
     // Add test button functionality
     document.getElementById('debug-test-btn').addEventListener('click', () => {
-      console.log('🧪 [CONTENT] Manual test triggered');
+
       this.testDetection();
     });
   }
@@ -122,17 +119,16 @@ class LeetCodeSyncExtension {
   }
   
   testDetection() {
-    console.log('🧪 [CONTENT] ===== MANUAL TEST DETECTION =====');
+
     this.updateDebugPanel('Testing', 'Manual test');
     
     // Test code extraction
     this.extractCode().then(code => {
-      console.log('🧪 [CONTENT] Test code extraction result:', code ? 'SUCCESS' : 'FAILED');
-      console.log('🧪 [CONTENT] Code length:', code?.length || 0);
+
       
       // Test problem data extraction
       const problemData = this.extractProblemData();
-      console.log('🧪 [CONTENT] Problem data:', problemData);
+
       
       // Test success detection
       this.checkForSuccess();
@@ -147,7 +143,7 @@ class LeetCodeSyncExtension {
   isLeetCodeProblemPage() {
     const url = window.location.href;
     const isLeetCode = url.includes('leetcode.com/problems/');
-    console.log('🔍 [CONTENT] Page check:', { url, isLeetCode });
+
     return isLeetCode;
   }
   
@@ -155,14 +151,14 @@ class LeetCodeSyncExtension {
     if (this.isMonitoring) return;
     
     this.isMonitoring = true;
-    console.log('👀 [CONTENT] Starting DOM monitoring...');
+
     
-    // Enhanced observer with better targeting
+    // Simplified observer - only watch for major result changes
     const observer = new MutationObserver((mutations) => {
       let shouldCheck = false;
       
       mutations.forEach((mutation) => {
-        // Log significant changes
+        // Only check for new result elements being added
         if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
           Array.from(mutation.addedNodes).forEach(node => {
             if (node.nodeType === 1) { // Element node
@@ -175,27 +171,17 @@ class LeetCodeSyncExtension {
             }
           });
         }
-        
-        // Check for attribute changes on result elements
-        if (mutation.type === 'attributes' && mutation.target.classList) {
-          const classList = Array.from(mutation.target.classList);
-          if (classList.some(cls => cls.includes('success') || cls.includes('accepted'))) {
-            shouldCheck = true;
-          }
-        }
       });
       
       if (shouldCheck) {
-        console.log('🔍 [CONTENT] Triggering success check due to DOM changes');
+
         this.checkForSuccess();
       }
     });
     
     observer.observe(document.body, {
       childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['class', 'data-cy', 'data-e2e-locator']
+      subtree: true
     });
     
     // Also check periodically
@@ -203,11 +189,11 @@ class LeetCodeSyncExtension {
       this.checkForSuccess();
     }, 5000);
     
-    console.log('✅ [CONTENT] DOM monitoring active');
+
   }
   
   setupSubmissionListener() {
-    console.log('🎯 [CONTENT] Setting up submission listeners...');
+
     
     // Enhanced click listener
     document.addEventListener('click', (event) => {
@@ -216,13 +202,7 @@ class LeetCodeSyncExtension {
       const isSubmitButton = this.isSubmitButton(target);
       
       if (isSubmitButton) {
-        console.log('🎯 [CONTENT] SUBMIT BUTTON CLICKED!');
-        console.log('🎯 [CONTENT] Button details:', {
-          text: text.substring(0, 50),
-          className: target.className,
-          dataCy: target.getAttribute('data-cy'),
-          dataE2eLocator: target.getAttribute('data-e2e-locator')
-        });
+
         
         this.handleSubmissionAttempt();
       }
@@ -230,19 +210,19 @@ class LeetCodeSyncExtension {
     
     // Enhanced form submission listener
     document.addEventListener('submit', (event) => {
-      console.log('📝 [CONTENT] Form submission detected');
+
       this.handleSubmissionAttempt();
     }, true);
     
     // Keyboard shortcuts
     document.addEventListener('keydown', (event) => {
       if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
-        console.log('⌨️ [CONTENT] Ctrl+Enter detected');
+
         this.handleSubmissionAttempt();
       }
     });
     
-    console.log('✅ [CONTENT] Submission listeners ready');
+
   }
   
   isSubmitButton(element) {
@@ -262,7 +242,7 @@ class LeetCodeSyncExtension {
   }
   
   async handleSubmissionAttempt() {
-    console.log('🚀 [CONTENT] ===== SUBMISSION ATTEMPT =====');
+
     this.updateDebugPanel('Submitting', 'Code submitted');
     
     const submissionCount = parseInt(localStorage.getItem('leetcode-sync-submissions') || '0') + 1;
@@ -270,30 +250,26 @@ class LeetCodeSyncExtension {
     
     document.getElementById('debug-submissions').textContent = `Submissions: ${submissionCount}`;
     
-    // Wait for result with multiple checks
-    const checkTimes = [2000, 5000, 8000, 12000]; // Progressive checking
-    
-    for (let i = 0; i < checkTimes.length; i++) {
-      setTimeout(() => {
-        console.log(`🔍 [CONTENT] Checking for success (attempt ${i + 1})`);
-        this.checkForSuccess();
-      }, checkTimes[i]);
-    }
+    // Single check after reasonable delay for result to appear
+    setTimeout(() => {
+
+      this.checkForSuccess();
+    }, 3000); // 3 seconds should be enough
   }
   
   async checkForSuccess() {
-    console.log('🔍 [CONTENT] ===== CHECKING FOR SUCCESS =====');
+
     
     // Check all success indicators
     const indicators = this.getAllSuccessIndicators();
-    console.log('📊 [CONTENT] Success indicators:', indicators);
+
     
     if (indicators.hasSuccess) {
-      console.log('🎉 [CONTENT] SUCCESS DETECTED!');
+
       this.updateDebugPanel('Success Detected', 'Processing submission');
       await this.handleSuccessfulSubmission();
     } else {
-      console.log('⏳ [CONTENT] No success detected yet');
+
       this.updateDebugPanel('Monitoring', 'Waiting for result');
     }
   }
@@ -314,7 +290,7 @@ class LeetCodeSyncExtension {
         if (elements.length > 0) {
           indicators.foundSelectors.push(selector);
           indicators.hasSuccess = true;
-          console.log('✅ [CONTENT] Found success selector:', selector);
+
         }
       } catch (e) {
         // Invalid selector, skip
@@ -353,31 +329,38 @@ class LeetCodeSyncExtension {
   }
   
   async handleSuccessfulSubmission() {
+    // Prevent multiple simultaneous submissions
+    if (this.isProcessingSubmission) {
+
+      return;
+    }
+    
+    this.isProcessingSubmission = true;
+    
     try {
-      console.log('🎉 [CONTENT] Processing successful submission...');
+
       
       const problemData = await this.extractProblemData();
-      console.log('📋 [CONTENT] Problem data extracted:', {
-        slug: problemData.slug,
-        language: problemData.language,
-        codeLength: problemData.code?.length || 0
-      });
+
       
-      if (problemData.code) {
-        console.log('📤 [CONTENT] Sending to backend...');
+      // Prevent duplicate submissions
+      if (problemData.code && problemData.code !== this.lastSubmittedCode) {
+
         this.lastSubmittedCode = problemData.code;
         await this.sendToBackend(problemData);
       } else {
-        console.log('⚠️ [CONTENT] Duplicate or empty code, skipping');
+
       }
     } catch (error) {
       console.error('❌ [CONTENT] Error in successful submission handler:', error);
       this.updateDebugPanel('Error', error.message);
+    } finally {
+      this.isProcessingSubmission = false;
     }
   }
   
   async extractProblemData() {
-    console.log('📋 [CONTENT] Extracting problem data...');
+
     
     const code = await this.extractCode();
     const problemSlug = this.extractProblemSlug();
@@ -394,7 +377,7 @@ class LeetCodeSyncExtension {
   }
   
     async extractCode() {
-    console.log('💻 [CONTENT] Extracting code...');
+
     
     // Try multiple strategies
     const strategies = [
@@ -409,23 +392,67 @@ class LeetCodeSyncExtension {
     for (const strategy of strategies) {
       try {
         const code = await strategy();
-        console.log("Code: ", code)
-        if (code && code.trim()) {
-          console.log('✅ [CONTENT] Code extracted successfully');
+
+        if (code && code.trim() && this.isValidCode(code)) {
+
           return code;
         }
       } catch (error) {
-        console.log('❌ [CONTENT] Strategy failed:', error.message);
+        // console.log('❌ [CONTENT] Strategy failed:', error.message);
       }
     }
     
     throw new Error('Could not extract code from any source');
   }
   
+  isValidCode(code) {
+    // Check if this looks like actual code, not arrays or other content
+    const trimmedCode = code.trim();
+    
+    // Reject if it's just numbers or arrays
+    if (/^\[\d+(?:,\d+)*\]$/.test(trimmedCode)) {
+      return false; // This is an array like [100,99,98]
+    }
+    
+    // Reject if it's just a sequence of numbers
+    if (/^\d+(?:\s*,\s*\d+)*$/.test(trimmedCode)) {
+      return false; // This is just numbers separated by commas
+    }
+    
+    // Reject if it's too short
+    if (trimmedCode.length < 20) {
+      return false;
+    }
+    
+    // Reject if it doesn't contain any programming keywords
+    const programmingKeywords = [
+      'def', 'class', 'function', 'var', 'let', 'const', 'if', 'else', 'for', 'while',
+      'return', 'import', 'export', 'public', 'private', 'static', 'void', 'int',
+      'string', 'boolean', 'true', 'false', 'null', 'undefined', 'try', 'catch',
+      'finally', 'throw', 'new', 'this', 'super', 'extends', 'implements'
+    ];
+    
+    const hasKeyword = programmingKeywords.some(keyword => 
+      trimmedCode.toLowerCase().includes(keyword)
+    );
+    
+    if (!hasKeyword) {
+      return false;
+    }
+    
+    // Reject if it's mostly just brackets or special characters
+    const specialCharRatio = (trimmedCode.match(/[\[\]{}()<>]/g) || []).length / trimmedCode.length;
+    if (specialCharRatio > 0.3) {
+      return false;
+    }
+    
+    return true;
+  }
+  
   extractFromMonaco() {
     if (window.monaco?.editor) {
       const editors = window.monaco.editor.getEditors();
-      console.log('📊 [CONTENT] Found Monaco editors:', editors.length);
+
       
       if (editors.length > 0) {
         // Try to get the main editor (usually the first one)
@@ -434,11 +461,12 @@ class LeetCodeSyncExtension {
         
         if (model) {
           const code = model.getValue();
-          console.log('📝 [CONTENT] Monaco code length:', code.length);
-          console.log('📝 [CONTENT] Monaco code preview:', code.substring(0, 200));
+
           
-          // Check if this looks like actual code (not just comments)
-          if (code && code.trim() && !code.includes('# The guess API is already defined for you')) {
+          // Check if this looks like actual code (not just comments or arrays)
+          if (code && code.trim() && 
+              !code.includes('# The guess API is already defined for you') &&
+              this.isValidCode(code)) {
             return code;
           }
         }
@@ -450,9 +478,11 @@ class LeetCodeSyncExtension {
           
           if (model) {
             const code = model.getValue();
-            console.log(`📝 [CONTENT] Monaco editor ${i} code length:`, code.length);
+
             
-            if (code && code.trim() && !code.includes('# The guess API is already defined for you')) {
+            if (code && code.trim() && 
+                !code.includes('# The guess API is already defined for you') &&
+                this.isValidCode(code)) {
               return code;
             }
           }
@@ -463,7 +493,7 @@ class LeetCodeSyncExtension {
   }
   
   extractFromSolutionArea() {
-    console.log('🔍 [CONTENT] Trying to extract from solution area...');
+
     
     // Look for the actual solution code in various containers
     const solutionSelectors = [
@@ -479,31 +509,33 @@ class LeetCodeSyncExtension {
     
     for (const selector of solutionSelectors) {
       const elements = document.querySelectorAll(selector);
-      console.log(`📊 [CONTENT] Found ${elements.length} elements for selector: ${selector}`);
+
       
       for (const element of elements) {
         // Try to get text content
         const textContent = element.textContent || element.innerText || '';
-        console.log(`📝 [CONTENT] Element text length: ${textContent.length}`);
+
         
-        if (textContent && textContent.trim() && textContent.length > 50) {
-          // Check if it contains actual code (not just comments)
-          const lines = textContent.split('\n');
-          const codeLines = lines.filter(line => 
-            line.trim() && 
-            !line.trim().startsWith('#') && 
-            !line.trim().startsWith('//') &&
-            !line.trim().startsWith('/*') &&
-            !line.trim().startsWith('*') &&
-            !line.trim().startsWith('"""') &&
-            !line.trim().startsWith("'''")
-          );
-          
-          if (codeLines.length > 2) {
-            console.log('✅ [CONTENT] Found code in solution area');
-            return textContent;
+                  if (textContent && textContent.trim() && textContent.length > 50) {
+            // Check if it contains actual code (not just comments or arrays)
+            if (this.isValidCode(textContent)) {
+              const lines = textContent.split('\n');
+              const codeLines = lines.filter(line => 
+                line.trim() && 
+                !line.trim().startsWith('#') && 
+                !line.trim().startsWith('//') &&
+                !line.trim().startsWith('/*') &&
+                !line.trim().startsWith('*') &&
+                !line.trim().startsWith('"""') &&
+                !line.trim().startsWith("'''")
+              );
+              
+              if (codeLines.length > 2) {
+
+                return textContent;
+              }
+            }
           }
-        }
       }
     }
     
@@ -511,7 +543,7 @@ class LeetCodeSyncExtension {
   }
   
   extractFromSubmissionResult() {
-    console.log('🔍 [CONTENT] Trying to extract from submission result...');
+
     
     // Look for code in submission result page
     const resultSelectors = [
@@ -527,30 +559,32 @@ class LeetCodeSyncExtension {
     
     for (const selector of resultSelectors) {
       const elements = document.querySelectorAll(selector);
-      console.log(`📊 [CONTENT] Found ${elements.length} elements for selector: ${selector}`);
+
       
       for (const element of elements) {
         const textContent = element.textContent || element.innerText || '';
-        console.log(`📝 [CONTENT] Result element text length: ${textContent.length}`);
+
         
-        if (textContent && textContent.trim() && textContent.length > 50) {
-          // Check if it contains actual code
-          const lines = textContent.split('\n');
-          const codeLines = lines.filter(line => 
-            line.trim() && 
-            !line.trim().startsWith('#') && 
-            !line.trim().startsWith('//') &&
-            !line.trim().startsWith('/*') &&
-            !line.trim().startsWith('*') &&
-            !line.trim().startsWith('"""') &&
-            !line.trim().startsWith("'''")
-          );
-          
-          if (codeLines.length > 2) {
-            console.log('✅ [CONTENT] Found code in submission result');
-            return textContent;
+                  if (textContent && textContent.trim() && textContent.length > 50) {
+            // Check if it contains actual code (not just arrays)
+            if (this.isValidCode(textContent)) {
+              const lines = textContent.split('\n');
+              const codeLines = lines.filter(line => 
+                line.trim() && 
+                !line.trim().startsWith('#') && 
+                !line.trim().startsWith('//') &&
+                !line.trim().startsWith('/*') &&
+                !line.trim().startsWith('*') &&
+                !line.trim().startsWith('"""') &&
+                !line.trim().startsWith("'''")
+              );
+              
+              if (codeLines.length > 2) {
+
+                return textContent;
+              }
+            }
           }
-        }
       }
     }
     
@@ -641,7 +675,6 @@ class LeetCodeSyncExtension {
   }
   
   async sendToBackend(data) {
-    console.log('📡 [CONTENT] Sending to backend via background script...');
     
     this.updateDebugPanel('Syncing', 'Sending to backend');
     
@@ -678,7 +711,7 @@ class LeetCodeSyncExtension {
   }
   
   updateStatus(status) {
-    console.log(`📊 [CONTENT] Status: ${status}`);
+
     if (typeof chrome !== 'undefined' && chrome.storage) {
       chrome.storage.local.set({ syncStatus: status });
     }
@@ -688,10 +721,10 @@ class LeetCodeSyncExtension {
 // Initialize when ready
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
-    console.log('🚀 [CONTENT] DOM loaded, initializing extension...');
+
     new LeetCodeSyncExtension();
   });
 } else {
-  console.log('🚀 [CONTENT] Document ready, initializing extension...');
+
   new LeetCodeSyncExtension();
 }

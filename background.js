@@ -12,13 +12,13 @@ class BackgroundService {
   setupEventListeners() {
     // Handle extension installation
     chrome.runtime.onInstalled.addListener((details) => {
-      console.log('LeetCode Sync Extension installed');
+
       this.handleInstallation(details);
     });
     
     // Handle extension startup
     chrome.runtime.onStartup.addListener(() => {
-      console.log('LeetCode Sync Extension started');
+
     });
     
     // Handle messages from content script
@@ -30,7 +30,7 @@ class BackgroundService {
     // Handle tab updates to check for LeetCode pages
     chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
       if (changeInfo.status === 'complete' && tab.url?.includes('leetcode.com/problems/')) {
-        console.log('LeetCode problem page detected:', tab.url);
+
         // Content script is automatically injected via manifest.json
         // No need to manually inject it
       }
@@ -54,22 +54,19 @@ class BackgroundService {
     const dataToStore = { ...defaultData, ...stored };
     
     await this.setStoredData(dataToStore);
-    console.log('Storage initialized with default data');
   }
   
   handleInstallation(details) {
     if (details.reason === 'install') {
       // First installation
-      console.log('First installation detected');
       this.showWelcomeNotification();
     } else if (details.reason === 'update') {
       // Extension updated
-      console.log('Extension updated to version', chrome.runtime.getManifest().version);
     }
   }
   
   async handleMessage(request, sender, sendResponse) {
-    console.log('Background received message:', request.action, request);
+
     
     try {
       switch (request.action) {
@@ -108,7 +105,7 @@ class BackgroundService {
   }
   
   async handleSendToBackend(request, sendResponse) {
-    console.log('📡 [BACKGROUND] Sending to backend...');
+
     
     const { data, authToken } = request;
     const backendUrl = 'http://127.0.0.1:3000/api/submit';
@@ -117,7 +114,7 @@ class BackgroundService {
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        console.log(`🔄 [BACKGROUND] Attempt ${attempt} of ${maxRetries}`);
+
         
         const response = await fetch(backendUrl, {
           method: 'POST',
@@ -139,7 +136,7 @@ class BackgroundService {
           
           // Wait before retry with exponential backoff
           const delay = retryDelay * Math.pow(2, attempt - 1);
-          console.log(`⏳ [BACKGROUND] Waiting ${delay}ms before retry...`);
+
           await new Promise(resolve => setTimeout(resolve, delay));
           continue;
         }
@@ -170,7 +167,7 @@ class BackgroundService {
         
         // Wait before retry with exponential backoff
         const delay = retryDelay * Math.pow(2, attempt - 1);
-        console.log(`⏳ [BACKGROUND] Waiting ${delay}ms before retry...`);
+
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
@@ -188,7 +185,7 @@ class BackgroundService {
       lastSync: new Date().toISOString()
     });
     
-    console.log('Sync data updated. New count:', newCount);
+
     
     // Show success notification
     this.showNotification('Sync Successful', 
@@ -213,7 +210,7 @@ class BackgroundService {
   }
   
   async updateSettings(newSettings) {
-    console.log('Updating settings:', newSettings);
+
     
     const stored = await this.getStoredData();
     const updatedSettings = { ...stored.settings, ...newSettings };
@@ -222,17 +219,17 @@ class BackgroundService {
       settings: updatedSettings
     });
     
-    console.log('Settings updated successfully');
+
   }
   
   showWelcomeNotification() {
-    console.log('Showing welcome notification');
+
     this.showNotification('Welcome to LeetCode Sync!', 
       'Your solutions will now be automatically synced to your AI tutor.');
   }
   
   showNotification(title, message) {
-    console.log('Showing notification:', title, message);
+
     
     // Check if notifications are supported
     if (!chrome.notifications) {
@@ -266,6 +263,5 @@ class BackgroundService {
 }
 
 // Initialize background service
-console.log('Background service initializing...');
+  
 new BackgroundService();
-console.log('Background service initialized');
