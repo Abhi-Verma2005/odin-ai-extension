@@ -1,6 +1,6 @@
 class LeetCodeSyncExtension {
   constructor() {
-    this.backendUrl = 'http://localhost:3000/api/submit';
+    this.backendUrl = 'http://127.0.0.1:3000/api/submit';
     this.isMonitoring = false;
     this.lastSubmittedCode = null;
     this.retryAttempts = 3;
@@ -393,12 +393,14 @@ class LeetCodeSyncExtension {
     };
   }
   
-  async extractCode() {
+    async extractCode() {
     console.log('💻 [CONTENT] Extracting code...');
     
     // Try multiple strategies
     const strategies = [
       () => this.extractFromMonaco(),
+      () => this.extractFromSolutionArea(),
+      () => this.extractFromSubmissionResult(),
       () => this.extractFromReactProps(),
       () => this.extractFromCodeMirror(),
       () => this.extractFromTextarea()
@@ -407,6 +409,7 @@ class LeetCodeSyncExtension {
     for (const strategy of strategies) {
       try {
         const code = await strategy();
+        console.log("Code: ", code)
         if (code && code.trim()) {
           console.log('✅ [CONTENT] Code extracted successfully');
           return code;
@@ -422,12 +425,136 @@ class LeetCodeSyncExtension {
   extractFromMonaco() {
     if (window.monaco?.editor) {
       const editors = window.monaco.editor.getEditors();
+      console.log('📊 [CONTENT] Found Monaco editors:', editors.length);
+      
       if (editors.length > 0) {
-        const code = editors[0].getModel()?.getValue();
-        if (code) return code;
+        // Try to get the main editor (usually the first one)
+        const editor = editors[0];
+        const model = editor.getModel();
+        
+        if (model) {
+          const code = model.getValue();
+          console.log('📝 [CONTENT] Monaco code length:', code.length);
+          console.log('📝 [CONTENT] Monaco code preview:', code.substring(0, 200));
+          
+          // Check if this looks like actual code (not just comments)
+          if (code && code.trim() && !code.includes('# The guess API is already defined for you')) {
+            return code;
+          }
+        }
+        
+        // Try other editors if the first one didn't work
+        for (let i = 1; i < editors.length; i++) {
+          const editor = editors[i];
+          const model = editor.getModel();
+          
+          if (model) {
+            const code = model.getValue();
+            console.log(`📝 [CONTENT] Monaco editor ${i} code length:`, code.length);
+            
+            if (code && code.trim() && !code.includes('# The guess API is already defined for you')) {
+              return code;
+            }
+          }
+        }
       }
     }
-    throw new Error('Monaco not available');
+    throw new Error('Monaco not available or no valid code found');
+  }
+  
+  extractFromSolutionArea() {
+    console.log('🔍 [CONTENT] Trying to extract from solution area...');
+    
+    // Look for the actual solution code in various containers
+    const solutionSelectors = [
+      '[data-cy="code-editor"]',
+      '.monaco-editor',
+      '.editor-container',
+      '[data-e2e-locator="code-editor"]',
+      '.CodeMirror',
+      '.ace_editor',
+      '[class*="editor"]',
+      '[class*="code"]'
+    ];
+    
+    for (const selector of solutionSelectors) {
+      const elements = document.querySelectorAll(selector);
+      console.log(`📊 [CONTENT] Found ${elements.length} elements for selector: ${selector}`);
+      
+      for (const element of elements) {
+        // Try to get text content
+        const textContent = element.textContent || element.innerText || '';
+        console.log(`📝 [CONTENT] Element text length: ${textContent.length}`);
+        
+        if (textContent && textContent.trim() && textContent.length > 50) {
+          // Check if it contains actual code (not just comments)
+          const lines = textContent.split('\n');
+          const codeLines = lines.filter(line => 
+            line.trim() && 
+            !line.trim().startsWith('#') && 
+            !line.trim().startsWith('//') &&
+            !line.trim().startsWith('/*') &&
+            !line.trim().startsWith('*') &&
+            !line.trim().startsWith('"""') &&
+            !line.trim().startsWith("'''")
+          );
+          
+          if (codeLines.length > 2) {
+            console.log('✅ [CONTENT] Found code in solution area');
+            return textContent;
+          }
+        }
+      }
+    }
+    
+    throw new Error('No solution area found');
+  }
+  
+  extractFromSubmissionResult() {
+    console.log('🔍 [CONTENT] Trying to extract from submission result...');
+    
+    // Look for code in submission result page
+    const resultSelectors = [
+      '[data-cy="submission-code"]',
+      '.submission-code',
+      '[data-e2e-locator="submission-code"]',
+      '.code-block',
+      'pre code',
+      '.highlight',
+      '[class*="submission"]',
+      '[class*="result"]'
+    ];
+    
+    for (const selector of resultSelectors) {
+      const elements = document.querySelectorAll(selector);
+      console.log(`📊 [CONTENT] Found ${elements.length} elements for selector: ${selector}`);
+      
+      for (const element of elements) {
+        const textContent = element.textContent || element.innerText || '';
+        console.log(`📝 [CONTENT] Result element text length: ${textContent.length}`);
+        
+        if (textContent && textContent.trim() && textContent.length > 50) {
+          // Check if it contains actual code
+          const lines = textContent.split('\n');
+          const codeLines = lines.filter(line => 
+            line.trim() && 
+            !line.trim().startsWith('#') && 
+            !line.trim().startsWith('//') &&
+            !line.trim().startsWith('/*') &&
+            !line.trim().startsWith('*') &&
+            !line.trim().startsWith('"""') &&
+            !line.trim().startsWith("'''")
+          );
+          
+          if (codeLines.length > 2) {
+            console.log('✅ [CONTENT] Found code in submission result');
+            return textContent;
+          }
+        }
+      }
+    }
+    
+    throw new Error('No submission result found');
   }
   
   extractFromReactProps() {
@@ -514,7 +641,8 @@ class LeetCodeSyncExtension {
   }
   
   async sendToBackend(data) {
-    console.log('📡 [CONTENT] Sending to backend...');
+    console.log('📡 [CONTENT] Sending to backend via background script...');
+    
     this.updateDebugPanel('Syncing', 'Sending to backend');
     
     const authToken = await this.getAuthToken();
@@ -524,24 +652,24 @@ class LeetCodeSyncExtension {
     }
     
     try {
-      const response = await fetch(this.backendUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
+      const response = await new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({
+          action: 'send_to_backend',
+          data: data,
+          authToken: authToken
+        }, (response) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+          } else if (response.error) {
+            reject(new Error(response.error));
+          } else {
+            resolve(response);
+          }
+        });
       });
       
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      
-      const result = await response.json();
-      console.log('✅ [CONTENT] Backend sync successful:', result);
       this.updateDebugPanel('Synced', 'Backend sync successful');
-      
-      return result;
+      return response;
     } catch (error) {
       console.error('❌ [CONTENT] Backend sync failed:', error);
       this.updateDebugPanel('Error', `Backend error: ${error.message}`);

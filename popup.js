@@ -196,7 +196,7 @@ class PopupManager {
       });
       
       if (data.success && data.token) {
-        console.log('✅ [LOGIN] Login successful, processing response...');
+
         console.log('👤 [LOGIN] User info:', {
           id: data.user.id,
           email: data.user.email,
@@ -213,7 +213,7 @@ class PopupManager {
         
         console.log('💾 [LOGIN] Storing auth data...');
         await this.storeAuthData(authData);
-        console.log('✅ [LOGIN] Auth data stored successfully');
+
         
         this.isAuthenticated = true;
         console.log('🔓 [LOGIN] Authentication state updated to true');
@@ -359,7 +359,7 @@ class PopupManager {
           console.error('❌ [STORAGE] Error storing data:', chrome.runtime.lastError);
           reject(chrome.runtime.lastError);
         } else {
-          console.log('✅ [STORAGE] Auth data stored successfully');
+  
           resolve();
         }
       });

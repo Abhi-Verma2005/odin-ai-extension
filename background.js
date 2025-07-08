@@ -73,6 +73,10 @@ class BackgroundService {
     
     try {
       switch (request.action) {
+        case 'send_to_backend':
+          await this.handleSendToBackend(request, sendResponse);
+          break;
+          
         case 'sync_success':
           await this.handleSyncSuccess(request.data);
           sendResponse({ success: true });
@@ -100,6 +104,75 @@ class BackgroundService {
     } catch (error) {
       console.error('Error handling message:', error);
       sendResponse({ error: error.message });
+    }
+  }
+  
+  async handleSendToBackend(request, sendResponse) {
+    console.log('📡 [BACKGROUND] Sending to backend...');
+    
+    const { data, authToken } = request;
+    const backendUrl = 'http://127.0.0.1:3000/api/submit';
+    const maxRetries = 3;
+    const retryDelay = 1000; // 1 second
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`🔄 [BACKGROUND] Attempt ${attempt} of ${maxRetries}`);
+        
+        const response = await fetch(backendUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`❌ [BACKGROUND] HTTP error (attempt ${attempt}):`, errorText);
+          
+          if (attempt === maxRetries) {
+            sendResponse({ error: `HTTP ${response.status}: ${response.statusText}` });
+            return;
+          }
+          
+          // Wait before retry with exponential backoff
+          const delay = retryDelay * Math.pow(2, attempt - 1);
+          console.log(`⏳ [BACKGROUND] Waiting ${delay}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+        
+        const result = await response.json();
+        
+        // Update storage
+        const stored = await this.getStoredData();
+        const newCount = (stored.problemsSynced || 0) + 1;
+        
+        await this.setStoredData({
+          syncStatus: 'Synced',
+          problemsSynced: newCount,
+          lastSync: new Date().toISOString()
+        });
+        
+        sendResponse({ success: true, data: result });
+        return;
+        
+      } catch (error) {
+        console.error(`❌ [BACKGROUND] Attempt ${attempt} failed:`, error);
+        
+        if (attempt === maxRetries) {
+          console.error('❌ [BACKGROUND] All attempts failed');
+          sendResponse({ error: error.message });
+          return;
+        }
+        
+        // Wait before retry with exponential backoff
+        const delay = retryDelay * Math.pow(2, attempt - 1);
+        console.log(`⏳ [BACKGROUND] Waiting ${delay}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
     }
   }
   
